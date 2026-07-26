@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>새 일정 생성 - AI 타임테이블</title>
+  <style>
+    :root {
+      --primary: #0066ff;
+      --primary-hover: #0052cc;
+      --bg: #f4f7fc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+    }
+    body {
+      font-family: 'Pretendard', -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0; padding: 0;
+    }
+    nav {
+      background: var(--primary); padding: 16px 20px;
+      display: flex; justify-content: space-between; align-items: center; color: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    nav h1 { margin: 0; font-size: 1.2rem; }
+    .nav-links { display: flex; gap: 12px; }
+    .nav-links a {
+      color: white; text-decoration: none; padding: 8px 14px;
+      border-radius: 6px; font-weight: bold; font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.15); transition: background 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active { background: white; color: var(--primary); }
+    .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+    .card {
+      background: var(--card-bg); border-radius: 12px; padding: 24px;
+      box-shadow: 0 4px 20px rgba(0, 102, 255, 0.08); border: 1px solid rgba(0, 102, 255, 0.1);
+      margin-bottom: 24px;
+    }
+    .input-section form { display: flex; gap: 12px; flex-wrap: wrap; }
+    .input-group { flex: 1; min-width: 240px; }
+    .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+    input[type="text"], input[type="datetime-local"] {
+      width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; box-sizing: border-box;
+    }
+    .btn-submit {
+      background: var(--primary); color: white; border: none; border-radius: 8px;
+      padding: 12px 24px; font-weight: bold; cursor: pointer; align-self: flex-end; height: 46px;
+    }
+    .output-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .timetable-item { padding: 12px; border-left: 4px solid var(--primary); background: #f8fafc; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <h1>🔥 마감 직전 활력 타임테이블</h1>
+    <div class="nav-links">
+      <a href="index.html">🏠 내 일정 관리</a>
+      <a href="schedule.html" class="active">⚡ 새 일정/타임테이블 생성</a>
+      <a href="board.html">💬 커뮤니티 게시판</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card input-section">
+      <h2>🚀 새 미룬 작업 & AI 타임테이블 생성</h2>
+      <form id="task-form">
+        <div class="input-group" style="flex: 2;">
+          <label for="task-input">🔥 미루고 있는 작업</label>
+          <input type="text" id="task-input" placeholder="예: 해커톤 발표 자료 작성하기" required>
+        </div>
+        <div class="input-group">
+          <label for="deadline-input">⏰ 최종 마감 기한</label>
+          <input type="datetime-local" id="deadline-input" required>
+        </div>
+        <button type="submit" class="btn-submit" id="gen-btn">생성 & 일정 추가하기</button>
+      </form>
+    </div>
+
+    <!-- 출력 창 -->
+    <div class="output-section card" id="result-card" style="display: none;">
+      <div>
+        <h3>⏳ 시간대별 타임테이블</h3>
+        <div id="timetable-output"></div>
+      </div>
+      <div>
+        <h3>🎯 마감 돌파 전략</h3>
+        <div id="strategy-output" style="line-height: 1.6; white-space: pre-line;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBb2SQ1wQ5ToONqCVWGFIlGCdUyt0sgwn8",
+      authDomain: "hacktest-20713.firebaseapp.com",
+      projectId: "hacktest-20713",
+      storageBucket: "hacktest-20713.firebasestorage.app",
+      messagingSenderId: "259397480995",
+      appId: "1:259397480995:web:290067a3cc0cae4aa13796"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const taskForm = document.getElementById('task-form');
+    const genBtn = document.getElementById('gen-btn');
+
+    taskForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const task = document.getElementById('task-input').value.trim();
+      const deadline = document.getElementById('deadline-input').value;
+
+      genBtn.disabled = true;
+      genBtn.innerText = "타임테이블 생성 중...";
+
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task, deadline })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        // 결과 출력
+        document.getElementById('timetable-output').innerHTML = data.timetable.map(item => `
+          <div class="timetable-item">
+            <strong style="color:#0066ff;">⏰ ${item.time}</strong>
+            <div>${item.action}</div>
+          </div>
+        `).join('');
+
+        document.getElementById('strategy-output').innerText = data.strategy;
+        document.getElementById('result-card').style.display = 'grid';
+
+        // Firestore 저장
+        await addDoc(collection(db, "schedules"), {
+          task, deadline, timetable: data.timetable, strategy: data.strategy,
+          is_done: false, created_at: serverTimestamp()
+        });
+
+        alert("타임테이블이 생성되었으며, '내 일정 관리'에 등록되었습니다!");
+
+      } catch (err) {
+        alert("오류 발생: " + err.message);
+      } finally {
+        genBtn.disabled = false;
+        genBtn.innerText = "생성 & 일정 추가하기";
+      }
+    });
+  </script>
+</body>
+</html>

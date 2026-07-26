@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>커뮤니티 게시판</title>
+  <style>
+    :root {
+      --primary: #0066ff;
+      --bg: #f4f7fc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+    }
+    body { font-family: 'Pretendard', sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
+    nav {
+      background: var(--primary); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; color: white;
+    }
+    nav h1 { margin: 0; font-size: 1.2rem; }
+    .nav-links { display: flex; gap: 12px; }
+    .nav-links a {
+      color: white; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .nav-links a:hover, .nav-links a.active { background: white; color: var(--primary); }
+    .container { max-width: 800px; margin: 30px auto; padding: 0 20px; }
+    .card { background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,102,255,0.08); margin-bottom: 24px; }
+    input[type="text"], textarea {
+      width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; box-sizing: border-box; margin-bottom: 12px;
+    }
+    .btn-submit { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 12px; font-weight: bold; cursor: pointer; width: 100%; }
+    .list-item { padding: 16px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; background: white; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <h1>🔥 마감 직전 활력 타임테이블</h1>
+    <div class="nav-links">
+      <a href="index.html">🏠 내 일정 관리</a>
+      <a href="schedule.html">⚡ 새 일정/타임테이블 생성</a>
+      <a href="board.html" class="active">💬 커뮤니티 게시판</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <h2>✍️ 의견 / 게시글 남기기</h2>
+      <form id="board-form">
+        <input type="text" id="board-title" placeholder="글 제목 입력" required>
+        <textarea id="board-content" placeholder="글 내용 입력..." rows="4" required></textarea>
+        <button type="submit" class="btn-submit">등록하기</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin:0;">📜 등록된 글 목록</h3>
+        <button onclick="loadBoard()" style="padding: 6px 12px; cursor: pointer;">🔒 관리자 글목록 불러오기</button>
+      </div>
+      <div id="board-list"><p style="color:#888;">목록을 불러오려면 상단 버튼을 클릭하세요.</p></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBb2SQ1wQ5ToONqCVWGFIlGCdUyt0sgwn8",
+      authDomain: "hacktest-20713.firebaseapp.com",
+      projectId: "hacktest-20713",
+      storageBucket: "hacktest-20713.firebasestorage.app",
+      messagingSenderId: "259397480995",
+      appId: "1:259397480995:web:290067a3cc0cae4aa13796"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const boardForm = document.getElementById('board-form');
+
+    // 글 등록 (누구나 가능)
+    boardForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('board-title').value.trim();
+      const content = document.getElementById('board-content').value.trim();
+
+      try {
+        await addDoc(collection(db, "posts"), {
+          title, content, created_at: serverTimestamp()
+        });
+        document.getElementById('board-title').value = '';
+        document.getElementById('board-content').value = '';
+        alert("성공적으로 글이 등록되었습니다!");
+      } catch (e) {
+        alert("글 작성 실패: " + e.message);
+      }
+    });
+
+    // 관리자 글목록 불러오기 (비밀번호 지정)
+    window.loadBoard = async () => {
+      const password = prompt("관리자 비밀번호를 입력하세요:");
+      if (password !== "1234") { // 👈 원하시는 비밀번호로 변경하세요
+        alert("비밀번호가 올바르지 않습니다.");
+        return;
+      }
+
+      const boardList = document.getElementById('board-list');
+      try {
+        const q = query(collection(db, "posts"), orderBy("created_at", "desc"));
+        const snapshot = await getDocs(q);
+
+        boardList.innerHTML = snapshot.docs.map(doc => {
+          const data = doc.data();
+          const date = data.created_at ? new Date(data.created_at.toDate()).toLocaleString() : '방금 전';
+          return `
+            <div class="list-item">
+              <div style="display:flex; justify-content:space-between;">
+                <strong>${data.title}</strong>
+                <small style="color:#64748b;">${date}</small>
+              </div>
+              <p style="margin:8px 0 0 0; color:#334155;">${data.content}</p>
+            </div>
+          `;
+        }).join('') || '<p style="color:#888;">등록된 게시글이 없습니다.</p>';
+      } catch (e) {
+        alert("불러오기 실패: " + e.message);
+      }
+    };
+  </script>
+</body>
+</html>
