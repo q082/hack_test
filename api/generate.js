@@ -1,6 +1,6 @@
-import { GoogleGenAI, Type } from '@google/genai';
+const { GoogleGenAI, Type } = require('@google/genai');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash-lite',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -71,4 +71,4 @@ export default async function handler(req, res) {
     console.error('Gemini API Error:', error);
     return res.status(500).json({ error: '타임테이블 생성 중 오류가 발생했습니다: ' + error.message });
   }
-}
+};
