@@ -378,8 +378,10 @@
       alert("타임테이블이 성공적으로 생성되고 저장되었습니다!");
 
     } catch (err) {
+      console.error("생성 오류:", err);
       alert("오류 발생: " + err.message);
     } finally {
+      // 💡 무조건 버튼 상태를 원상복구시켜 '타임테이블 생성 중...'에서 풀려나게 함
       genBtn.disabled = false;
       genBtn.innerText = "🚀 바로 시작하기!";
     }
