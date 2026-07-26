@@ -355,5 +355,38 @@
   // 페이지가 로드되면 실행
   window.addEventListener('DOMContentLoaded', loadPosts);
 </script>  
+<!-- ================= 2번 게시판 (상태 관리 게시판) ================= -->
+<div id="board-2-container" style="margin-top: 40px; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+  <h2>📌 상태 관리 게시판 (완료/미완료)</h2>
+
+  <!-- 1. 등록 입력창 -->
+  <form id="todo-form" style="margin-bottom: 20px;">
+    <input type="text" id="todo-title" placeholder="항목/할 일 제목 입력" required style="width: 60%; padding: 8px;">
+    
+    <!-- 완료 여부 선택 콤보박스 -->
+    <select id="todo-status-input" style="padding: 8px;">
+      <option value="false">미완료 ⏳</option>
+      <option value="true">완료 ✅</option>
+    </select>
+    
+    <button type="submit" style="padding: 8px 16px;">등록</button>
+  </form>
+
+  <!-- 2. 필터 선택 (전체 / 미완료 / 완료만 보기) -->
+  <div style="margin-bottom: 15px;">
+    <label><strong>보기 필터: </strong></label>
+    <select id="todo-filter" style="padding: 6px;">
+      <option value="all">전체 보기</option>
+      <option value="false">미완료 목록만 ⏳</option>
+      <option value="true">완료 목록만 ✅</option>
+    </select>
+  </div>
+
+  <!-- 3. 목록 표시 영역 -->
+  <div id="todo-list">
+    <!-- Firestore 데이터가 보여지는 곳 -->
+  </div>
+</div>
+  
 </body>
 </html>
