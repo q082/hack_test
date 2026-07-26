@@ -1,6 +1,6 @@
-const { GoogleGenAI, Type } = require('@google/genai');
+import { GoogleGenAI, Type } from '@google/genai';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -71,4 +71,4 @@ module.exports = async function handler(req, res) {
     console.error('Gemini API Error:', error);
     return res.status(500).json({ error: '타임테이블 생성 중 오류가 발생했습니다: ' + error.message });
   }
-};
+}
