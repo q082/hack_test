@@ -21,7 +21,7 @@
       margin: 0;
       padding: 0;
     }
-    /* 상단 네비게이션 바 (화면 이동) */
+    /* 상단 네비게이션 바 */
     nav {
       background: var(--primary);
       padding: 16px 20px;
@@ -88,7 +88,35 @@
     .badge-done { background-color: #10b981; }
     .btn-submit {
       background: var(--primary); color: white; border: none; border-radius: 6px;
-      padding: 8px 16px; font-weight: bold; cursor: pointer;
+      padding: 10px 20px; font-weight: bold; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-submit:hover { background: var(--primary-hover); }
+
+    /* 🎨 타임테이블 카드 스타일 (등록 화면 동일 적용) */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 16px;
+    }
+    @media (max-width: 768px) {
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+    .timetable-item {
+      padding: 12px 16px;
+      border-left: 4px solid var(--primary);
+      background: #f8fafc;
+      margin-bottom: 10px;
+      border-radius: 0 8px 8px 0;
+    }
+    .timetable-time {
+      font-weight: bold;
+      font-size: 0.9rem;
+      color: var(--primary);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
   </style>
 </head>
@@ -128,8 +156,8 @@
 
       <div id="schedule-list">불러오는 중...</div>
       
-      <!-- 상세보기 영역 -->
-      <div id="schedule-detail" style="display:none; margin-top: 20px; padding: 20px; background: #eef6ff; border-radius: 8px; border: 1px solid #cce3ff;"></div>
+      <!-- 🎨 멋들어진 2단 상세보기 영역 -->
+      <div id="schedule-detail" style="display:none; margin-top: 24px; padding: 24px; background: #ffffff; border-radius: 12px; border: 1.5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,102,255,0.08);"></div>
     </div>
   </div>
 
@@ -183,16 +211,17 @@
       listEl.innerHTML = filtered.map(item => `
         <div class="list-item" onclick="showScheduleDetail('${item.id}')">
           <div class="list-header">
-            <strong>${item.task}</strong>
+            <strong>📌 ${item.task}</strong>
             <span class="badge ${item.is_done ? 'badge-done' : 'badge-pending'}">
               ${item.is_done ? '완료 ✅' : '미완료 ⏳'}
             </span>
           </div>
-          <small style="color: #64748b;">⏰ 마감: ${new Date(item.deadline).toLocaleString()}</small>
+          <small style="color: #64748b;">⏰ 마감기한: ${new Date(item.deadline).toLocaleString()}</small>
         </div>
       `).join('') || '<p style="color:#888;">등록된 일정이 없습니다. 상단 메뉴에서 새 일정을 생성해 보세요!</p>';
     }
 
+    // 🎨 상세보기 구성 함수 (2분할 카드 레이아웃 적용)
     window.showScheduleDetail = (id) => {
       const item = allSchedules.find(s => s.id === id);
       if (!item) return;
@@ -201,19 +230,41 @@
       detailEl.style.display = 'block';
 
       const timetableHtml = item.timetable ? item.timetable.map(t => `
-        <li style="margin-bottom:6px;"><strong>[${t.time}]</strong> ${t.action}</li>
-      `).join('') : '타임테이블 정보 없음';
+        <div class="timetable-item">
+          <div class="timetable-time">⏰ ${t.time}</div>
+          <div style="color: #334155;">${t.action}</div>
+        </div>
+      `).join('') : '<p style="color:#888;">등록된 타임테이블이 없습니다.</p>';
 
       detailEl.innerHTML = `
-        <h3>📌 ${item.task}</h3>
-        <p><strong>⏰ 마감기한:</strong> ${new Date(item.deadline).toLocaleString()}</p>
-        <p><strong>🎯 마감 전략:</strong> ${item.strategy}</p>
-        <h4>⏳ 타임테이블:</h4>
-        <ul>${timetableHtml}</ul>
-        <button class="btn-submit" onclick="toggleComplete('${item.id}', ${!item.is_done})">
-          ${item.is_done ? '미완료로 변경' : '완료 처리하기'}
-        </button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom: 2px solid #f1f5f9; padding-bottom:12px;">
+          <h2 style="margin:0; color:#0066ff;">📌 ${item.task}</h2>
+          <span class="badge ${item.is_done ? 'badge-done' : 'badge-pending'}" style="font-size:0.9rem; padding: 6px 12px;">
+            ${item.is_done ? '완료 ✅' : '미완료 ⏳'}
+          </span>
+        </div>
+        <p style="margin: 0 0 16px 0; color: #64748b;"><strong>⏰ 최종 마감기한:</strong> ${new Date(item.deadline).toLocaleString()}</p>
+        
+        <div class="detail-grid">
+          <div>
+            <h3 style="color:#0066ff; margin-top:0;">⏳ 시간대별 타임테이블</h3>
+            <div>${timetableHtml}</div>
+          </div>
+          <div>
+            <h3 style="color:#0066ff; margin-top:0;">🎯 마감 돌파 전략</h3>
+            <div style="line-height: 1.6; color: #334155; white-space: pre-line; background: #f8fafc; padding: 16px; border-radius: 8px;">${item.strategy}</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; text-align: right;">
+          <button class="btn-submit" onclick="toggleComplete('${item.id}', ${!item.is_done})">
+            ${item.is_done ? '미완료로 변경' : '완료 처리하기'}
+          </button>
+        </div>
       `;
+
+      // 상세보기 클릭 시 해당 위치로 부드럽게 스크롤
+      detailEl.scrollIntoView({ behavior: 'smooth' });
     };
 
     window.toggleComplete = async (id, status) => {
