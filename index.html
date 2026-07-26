@@ -247,5 +247,113 @@
       }
     }
   </script>
+<!-- Firebase SDK (v10 Modular 버전) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    getDocs, 
+    query, 
+    orderBy, 
+    serverTimestamp 
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // 3번: 여기에 본인의 firebaseConfig 설정값을 그대로 붙여넣어 주세요!
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  // Firebase 초기화
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // HTML 요소 가져오기 (기존 HTML의 id/class 이름에 맞춰 연결하세요)
+  const postForm = document.getElementById('post-form');         // 글 작성 form
+  const titleInput = document.getElementById('post-title');       // 제목 입력창
+  const contentInput = document.getElementById('post-content');   // 내용 입력창
+  const postList = document.getElementById('post-list');         // 게시글 목록 영역
+
+  // 2번 & 5번: Firestore에서 글 목록 가져오기 (최신순 정렬)
+  async function loadPosts() {
+    if (!postList) return;
+    
+    try {
+      // 'created_at' 기준으로 내림차순(최신순) 정렬
+      const q = query(collection(db, "posts"), orderBy("created_at", "desc"));
+      const querySnapshot = await getDocs(q);
+
+      postList.innerHTML = ''; // 기존 목록 초기화
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        
+        // 작성일자 포맷팅 (YYYY-MM-DD HH:mm)
+        const date = data.created_at ? new Date(data.created_at.toDate()).toLocaleString() : '방금 전';
+
+        // 기존 게시판 목록 스타일 형식에 맞춰 HTML 생성
+        const postElement = document.createElement('div');
+        postElement.className = 'post-item'; // 기존 CSS 클래스명 유지
+        postElement.innerHTML = `
+          <h3>${escapeHtml(data.title)}</h3>
+          <p>${escapeHtml(data.content)}</p>
+          <small>${date}</small>
+        `;
+        postList.appendChild(postElement);
+      });
+    } catch (error) {
+      console.error("글 불러오기 실패:", error);
+    }
+  }
+
+  // 1번: 등록 버튼 클릭(Form 제출) 시 Firestore에 저장
+  if (postForm) {
+    postForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const title = titleInput.value.trim();
+      const content = contentInput.value.trim();
+
+      if (!title || !content) {
+        alert("제목과 내용을 입력해 주세요.");
+        return;
+      }
+
+      try {
+        // Firestore 'posts' 컬렉션에 새 문서 추가
+        await addDoc(collection(db, "posts"), {
+          title: title,
+          content: content,
+          created_at: serverTimestamp() // 작성 시간 저장
+        });
+
+        // 입력창 초기화 및 목록 다시 로드
+        titleInput.value = '';
+        contentInput.value = '';
+        await loadPosts(); 
+
+      } catch (error) {
+        console.error("글 저장 실패:", error);
+        alert("글 등록 중 오류가 발생했습니다: " + error.message);
+      }
+    });
+  }
+
+  // XSS 공격 방지를 위한 텍스트 이스케이프 함수
+  function escapeHtml(text) {
+    return text
+      ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      : '';
+  }
+
+  // 페이지가 로드되면 실행
+  window.addEventListener('DOMContentLoaded', loadPosts);
+</script>  
 </body>
 </html>
