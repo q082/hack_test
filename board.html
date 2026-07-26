@@ -10,6 +10,8 @@
       --bg: #f4f7fc;
       --card-bg: #ffffff;
       --border: #e2e8f0;
+      --danger: #dc2626;
+      --danger-hover: #b91c1c;
     }
     body { font-family: 'Pretendard', sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
     nav {
@@ -28,6 +30,11 @@
       width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; box-sizing: border-box; margin-bottom: 12px;
     }
     .btn-submit { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 12px; font-weight: bold; cursor: pointer; width: 100%; }
+    .btn-delete {
+      background: var(--danger); color: white; border: none; border-radius: 4px;
+      padding: 4px 10px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-delete:hover { background: var(--danger-hover); }
     .list-item { padding: 16px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; background: white; }
   </style>
 </head>
@@ -63,7 +70,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBb2SQ1wQ5ToONqCVWGFIlGCdUyt0sgwn8",
@@ -79,7 +86,7 @@
 
     const boardForm = document.getElementById('board-form');
 
-    // 글 등록 (누구나 가능)
+    // 글 등록
     boardForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const title = document.getElementById('board-title').value.trim();
@@ -97,27 +104,37 @@
       }
     });
 
-    // 관리자 글목록 불러오기 (비밀번호 지정)
+    // 관리자 글목록 불러오기
     window.loadBoard = async () => {
       const password = prompt("관리자 비밀번호를 입력하세요:");
-      if (password !== "1234") { // 👈 원하시는 비밀번호로 변경하세요
+      if (password !== "1234") {
         alert("비밀번호가 올바르지 않습니다.");
         return;
       }
 
+      await renderBoardList();
+    };
+
+    // 글 목록 렌더링 함수
+    async function renderBoardList() {
       const boardList = document.getElementById('board-list');
       try {
         const q = query(collection(db, "posts"), orderBy("created_at", "desc"));
         const snapshot = await getDocs(q);
 
-        boardList.innerHTML = snapshot.docs.map(doc => {
-          const data = doc.data();
+        boardList.innerHTML = snapshot.docs.map(docSnap => {
+          const data = docSnap.data();
+          const docId = docSnap.id;
           const date = data.created_at ? new Date(data.created_at.toDate()).toLocaleString() : '방금 전';
           return `
             <div class="list-item">
-              <div style="display:flex; justify-content:space-between;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
                 <strong>${data.title}</strong>
-                <small style="color:#64748b;">${date}</small>
+                <div>
+                  <small style="color:#64748b; margin-right: 8px;">${date}</small>
+                  <!-- 🗑️ 삭제 버튼 추가 -->
+                  <button class="btn-delete" onclick="deletePost('${docId}')">삭제</button>
+                </div>
               </div>
               <p style="margin:8px 0 0 0; color:#334155;">${data.content}</p>
             </div>
@@ -125,6 +142,19 @@
         }).join('') || '<p style="color:#888;">등록된 게시글이 없습니다.</p>';
       } catch (e) {
         alert("불러오기 실패: " + e.message);
+      }
+    }
+
+    // 🗑️ 게시글 삭제 함수
+    window.deletePost = async (id) => {
+      if (confirm("이 게시글을 삭제하시겠습니까?")) {
+        try {
+          await deleteDoc(doc(db, "posts", id));
+          alert("게시글이 삭제되었습니다.");
+          await renderBoardList();
+        } catch (error) {
+          alert("삭제 실패: " + error.message);
+        }
       }
     };
   </script>
