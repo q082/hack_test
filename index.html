@@ -45,7 +45,7 @@
       font-weight: 500;
     }
 
-    /* 카드 공통 스타일 */
+    /* 카드 스타일 */
     .card {
       background: var(--card-bg);
       border-radius: 12px;
@@ -55,7 +55,7 @@
       margin-bottom: 24px;
     }
 
-    /* 입력창 (화면 상단) */
+    /* 입력창 (상단) */
     .input-section form {
       display: flex;
       gap: 12px;
@@ -238,7 +238,7 @@
 <div class="container">
   <header>
     <h1>🔥 마감 직전 활력 타임테이블</h1>
-    <p>지금 바로 시작하세요! 시간을 할개어 완벽하게 끝내드립니다.</p>
+    <p>지금 바로 시작하세요! 시간을 조각내어 완벽하게 끝내드립니다.</p>
   </header>
 
   <!-- 1. 입력창 (상단) -->
@@ -271,8 +271,8 @@
   <!-- 3. 하단 탭 (일정 조회 & 게시판) -->
   <div class="card">
     <div class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('schedule-tab')">📅 등록된 일정 조회</button>
-      <button class="tab-btn" onclick="switchTab('board-tab')">💬 커뮤니티 게시판</button>
+      <button class="tab-btn active" onclick="switchTab('schedule-tab', event)">📅 등록된 일정 조회</button>
+      <button class="tab-btn" onclick="switchTab('board-tab', event)">💬 커뮤니티 게시판</button>
     </div>
 
     <!-- [탭 1] 일정 조회 화면 -->
@@ -318,14 +318,14 @@
     getFirestore, collection, addDoc, getDocs, updateDoc, doc, query, orderBy, serverTimestamp 
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // 3번: 본인의 Firebase 설정값을 여기에 붙여넣어 주세요
+  // 🔑 전달해주신 Firebase 설정값 반영 완료
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyBb2SQ1wQ5ToONqCVWGFIlGCdUyt0sgwn8",
+    authDomain: "hacktest-20713.firebaseapp.com",
+    projectId: "hacktest-20713",
+    storageBucket: "hacktest-20713.firebasestorage.app",
+    messagingSenderId: "259397480995",
+    appId: "1:259397480995:web:290067a3cc0cae4aa13796"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -371,11 +371,11 @@
         created_at: serverTimestamp()
       });
 
-      // 알림 등록 (브라우저 푸시)
+      // 알림 등록
       scheduleNotifications(task, data.timetable);
 
       loadSchedules(); // 목록 갱신
-      alert("타임테이블이 생성되고 저장되었습니다!");
+      alert("타임테이블이 성공적으로 생성되고 저장되었습니다!");
 
     } catch (err) {
       alert("오류 발생: " + err.message);
@@ -398,7 +398,6 @@
     document.getElementById('result-card').style.display = 'grid';
   }
 
-  // 브라우저 실시간 알림 등록 기능
   function scheduleNotifications(taskName, timetable) {
     if ("Notification" in window && Notification.permission === "granted") {
       new Notification(`[마감 시작] ${taskName}`, {
@@ -526,16 +525,16 @@
     }
   });
 
-  // 탭 전환 글로벌 함수
-  window.switchTab = (tabId) => {
+  // 탭 전환 함수
+  window.switchTab = (tabId, evt) => {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
-    event.target.classList.add('active');
+    evt.currentTarget.classList.add('active');
     document.getElementById(tabId).classList.add('active');
   };
 
-  // 초기 데이터 로드
+  // 초기 로드
   window.addEventListener('DOMContentLoaded', () => {
     loadSchedules();
     loadBoard();
