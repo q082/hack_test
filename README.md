@@ -19,12 +19,11 @@
 
 ```text
 deadline-alarm-app/
-├── api/
-│   └── generate.js      # Gemini API 호출 Vercel 서버리스 함수
-├── index.html           # 대시보드 프론트엔드 UI & 알림 스크립트
-├── package.json         # Node.js 패키지 설정 (@google/genai)
-├── vercel.json          # Vercel 라우팅 설정
-└── README.md            # 프로젝트 안내 문서
+├── index.html       (메인: 내 해야 할 일 목록 화면)
+├── schedule.html    (새 일정 입력 & AI 타임테이블 생성 화면)
+├── board.html       (외부인 등록 / 관리자만 조회 가능한 게시판)
+└── api/
+    └── generate.js  (Gemini API 호출 백엔드 서버리스 함수)
 ```
 
 ---
